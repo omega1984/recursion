@@ -4,39 +4,6 @@
 // but you don't so you're going to write it from scratch:
 
 var stringifyJSON = function(obj) {
-	// if(obj === null){
- //    return "null";
- //  }
- //  if(typeof obj === "string"){
- //  return '"' + obj + '"';
- //  }
-
- //  if(typeof obj === "function" || typeof obj === "undefined"){
- //    return "";
- //  }
- //  if(Array.isArray(obj)){
- //    var stringArr = [];
-
- //    obj.forEach(function(element){
- //      stringArr.push(stringifyJSON(element));
- //    })
- //    return "[" + stringArr.toString() + "]";
- //  }
-
- //  if(typeof obj === "object"){
- //  var stringObj = "";
- //  var objKeys = Object.keys(obj);
- //  objKeys.forEach(function(k){
- //    if(typeof k === "function" || typeof k === "undefined" || typeof obj[k] === "function" || typeof obj[k] === "undefined"){
- //      return "";
- //    }
- //    else{stringObj += stringifyJSON(k) + ':' + stringifyJSON(obj[k]) + ',';
- //    }
- //  })
- //  return "{" + stringObj.slice(0, stringObj.length - 1) + "}"
- //  }
-
- //  return obj.toString();
 	var result = '';
 
   	// If obj is an array
@@ -44,7 +11,7 @@ var stringifyJSON = function(obj) {
     	result += '[';
     	for (var i = 0; i < obj.length; i++) {
       		result += stringifyJSON(obj[i]);
-      		if (i + 1 < obj.length) {
+      		if (i < obj.length - 1) {
         		result += ',';
       		}
     	}
@@ -64,7 +31,7 @@ var stringifyJSON = function(obj) {
     	result += '}';
   	// Else if obj is a boolean
   	} else if (typeof obj === 'boolean') {
-    	if (obj) {
+    	if (obj === true) {
       		result +='true';
     	} else {
       		result += 'false';
@@ -82,7 +49,6 @@ var stringifyJSON = function(obj) {
   	} else if (obj === null) {
     	return 'null';
   	}
-
   	// Return result
   	return result;
 };
