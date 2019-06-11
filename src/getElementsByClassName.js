@@ -7,14 +7,14 @@
 var getElementsByClassName = function(className) {
     var array = [];
 
-	var helper = function(data){
-	  	if(data.classList && data.classList.contains(className)){
-	    	array.push(data);
+	var helper = function(element){
+	  	if(element.classList && element.classList.contains(className)){
+	    	array.push(element);
 	  	}
 	    var i = 0;
-	    while(i < data.children.length){
-	      	helper(data.children[i]);
-	      	i+=1;
+	    while(i < element.children.length){
+	      	helper(element.children[i]);
+	      	i++;
 	    }
 	}
 	helper(document.body);
