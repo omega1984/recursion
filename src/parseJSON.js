@@ -3,213 +3,205 @@
 
 // but you're not, so you'll write it from scratch:
 var parseJSON = function(json) {
-  /*
-  insert code for:
-  index ch, next, error, value, nully, bool, number, escapes, string, array, object
-  */
 
-	var index, // current index of JSON text
-    	char; // character at current index
+  // Initial paramater
+  var index = 0;
+  var character = ' ';
 
-	var next = function() {
-	  	// increments at
-	  	// updates ch
-	  	index++;
-	  	char = json.charAt(index); // json is the JSON text passed into our parser
-  		return char;
-	};
+ // next() - helper
+ // Move to the next character in the json string
+ // Optionally accept the ch paramater to check for expected characters
+ // return the next character at current index
+  var next = ch => {
+    if (ch && ch !== character ){
+      throw new SyntaxError("Expected '" + ch + "' instead of '" + character + "'");
+    }
+    character = json.charAt(index);
+    index++;
+    return character;
+  };
 
-	var error = function() { // throw error for bad syntax
-		throw undefined;
-	};
+  // whiespace() - helper
+  // clean whitespaces until a character is found
+  var whitespace = () => {
+    while(character && character <= ' '){
+      next();
+    }
+  };
 
-	var value = function () {
-	 	switch(char) {
-		    case '{':
-		    	return object();
-		    case '[':
-		      	return array();
-		    case '\"':
-		      	return string();
-		    case 't':
-		    case 'f':
-		      	return bool();
-		    case 'n':
-		      	return nully();
-		    default:
-		      	if(char === '-' || (char && char >= 0 && char <= 9)) { // number
-		        	return number();
-		      	}else{
-		    		error();
-		     	}
-		      	break;
-	  	}
-	};
+  // parseString() - innerParser
+  // parse a "string" value
+  // return the parsed string
+  var parseString = () => {
+    var str = "";
+    var exception = {
+      '"'  : '"',
+      '\\' : '\\',
+      '/'  : '/',
+      b    : '\b',
+      f    : '\f',
+      n    : '\n',
+      r    : '\r',
+      t    : '\t'
+    };
 
-	var nully = function() {
-		// ch is at 'n', verify and return null
-		var nully = '';
-		if(char === 'n') {
-		   	_.times(4, function() {
-		    	nully += char;
-		      	next();
-		    });
-		    if(nully === 'null') {
-		      	return null;
-		    } else {
-		      	error();
-		    }
-		}
-		error();
-	};
+    if(character === '"'){
+      while(next()){
+        if(character === '"'){
+          next('"');
+          return str;
+        } else if(character === '\\'){
+          next();
+          if(typeof exception[character] === 'string'){
+            str += exception[character];
+          } else {
+            break;
+          }
+        } else {
+          str += character;
+        }
+      }
+    }
+    throw new SyntaxError('Bad string');
+  };
 
-	var bool = function() {
-	  	// ch is at 't' of 'f', verify & return the boolean
-	  	var bool = '';
-	  	if(char === 't') {
-	    	_.times(4, function() {
-	      		bool += char;
-	      		next();
-	    	});
-		    if(bool === 'true') {
-		      	return true;
-		    }else{
-		      	error();
-		    }
-	  	}else if(char === 'f') {
-		    _.times(5, function() {
-		      	bool += char;
-		      	next();
-		    });
-		    if(bool === 'false') {
-		      	return false;
-		    }else{
-		      	error();
-		    }
-	  	}
-	  	error();
-	};
-	var number = function() {
-	  	// ch is at negative sign '-' or digit 0-9, create & return the number
-	  	var number = ''; // create string and then use Number() to convert
-	  	function getDigits() { // collect consecutive digits until non-digit is reached
-	    	while(char && char >= 0 && char <= 9) { // need to avoid empty strings
-	      		number += char;
-	      		next();
-	    	}
-	  	}
+  // parseNumber() - innerParser
+  // parse a number value [negative, positive, floats]
+  // return the parsed number
+  var parseNumber = () => {
+    var str = "";
+    var number;
 
-	  	// optional - get neg sign
-	  	if(char === '-') {
-	    	number += char;
-	    	next();
-	 	}
-	  	getDigits();
+    if(character === '-'){
+      str += '-';
+      next();
+    }
 
-	  	// optional - get decimal point
-	  	if(char === '.') {
-	    	number += char;
-	    	next();
-	    	getDigits();
-	  	}
+    while(character >= '0' && character <= '9'){
+      str += character;
+      next();
+    }
 
-	  	// optional - get exponential
-	  	if(char === 'e' || char === 'E') {
-	    	number += char;
-	    	next();
-	    // required - get sign of exponent
-	    	if(char === '-' || char === '+') {
-	      		number += char;
-	      		next();
-	    	}
-	    	getDigits(); // exponent
-		}
+    if(character === '.'){
+      str += character;
+      while(next() && character >= '0' && character <= '9'){
+        str += character;
+      }
+    }
 
-	  	if(!isNaN(Number(number))) { // check if string can be converted to number
-	    	return Number(number);
-	  	}else{ // string could not be converted to number
-	    	error();
-	  	}
-	};
+    number = Number(str);
 
-	var escapes = { // helper variable
-		'b': '\b',
-		'n': '\n',
-		't': '\t',
-		'r': '\r',
-		'f': '\f',
-		'\"': '\"',
-		'\\': '\\'
-	};
+    if (isNaN(number)) {
+      throw new SyntaxError("Bad number");
+    } else {
+      return number;
+    }
+  };
 
-	var string = function() {
-	  	// ch is at opening quote, create & return the string
-	  	var string = '';
-	  	if(char !== '\"') error();
-	  		next();
-	  	while(char) {
-	    	// watch for end of string
-	    	if(char === '\"') {
-	      		next();
-	      		return string;
-	    	}
-	    	// watch for escapes
-	    	if(char === '\\') {
-	      		next();
-	      		if(escapes.hasOwnProperty(char)) {
-	        		string += escapes[char];
-	      		} else {
-			        // if not a proper escape code, ignore escape and just add char
-			        // NOTE: this should never be called if proper stringified JSON provided
-			        string += char;
-	      		}
-	    	} else {
-		      	// anything other than \ and " => just add character to string
-		      	string += char;
-	    	}
-	    	next();
-	  	}
-		// reached end without closing quote => error
-		error();
-	};
+  // parseArray() - innerParser
+  // parse an array
+  // return the parsed array
+  var parseArray = () => {
+    var arr = [];
+    if (character === '['){
+      next();
+      whitespace();
+      if(character === ']'){
+        next();
+        return arr;
+      }
+      while(character){
+        arr.push(parseValue());
+        whitespace();
+        if(character === ']'){
+          next();
+          return arr;
+        }
+        next();
+        whitespace();
+      }
+    }
+    throw new SyntaxError('Bad array');
+  };
 
-	var array = function() {
-	  	// ch is at opening bracket, create & return the array
-	  	var array = [];
-	  	if(char !== '[') error();
-	  	if(next() === ']') return array; // empty array
+  // parseObject() - innerParser
+  // parse an object
+  // return the parsed object
+  var parseObject = () => {
+    var obj = {};
 
-	  	do {
-	    	array.push(value());
-	    	if(char === ']') { // array end reached
-	      		next();
-	      		return array;
-	    	}
-	  	} 
-	  	while(char && char === ',' && next()); // found ',' => more elements to go
-	  	error();
-	};
+    if(character === '{'){
+      next();
+      whitespace();
+      if(character === '}'){
+        next();
+        return obj;
+      }
+      while(character){
+        var key = parseString();
+        whitespace();
+        next(':');
+        var value = parseValue();
+        obj[key] = value;
+        whitespace();
+        if(character === '}'){
+          next();
+          return obj;
+        }
+        next(',');
+        whitespace();
+      }
+    }
+    throw new SyntaxError('Bad object');
+  };
 
-	var object = function() {
-	  	// ch is at opening curley brace, create & return the object
-	  	var object = {};
-	  	if(char !== '{') error();
-	  	if(next() === '}') return object; // empty object
+  // parseSpecial() - innerParser
+  // parse some special values [booleans, null]
+  // return the parsed value
+  var parseSpecial = () => {
+    if(character === 't'){
+      next('t');
+      next('r');
+      next('u');
+      next('e');
+      return true;
+    }
 
-	  	do {
-	    	var key = string(); // get key
-	    	if(char !== ':') error();
-	    	next();
-	    	object[key] = value(); // create property with whatever value is, perhaps another object/array
-	    	if(char === '}') {  // object end reached
-		      	next();
-		      	return object;
-	    	}
-	  	} 
-	  	while(char && char === ',' && next()); // found ',' => more properties to go
-	  	error();
-	};
-	index = 0;
-	char = json.charAt(index);
-	return value();
+    if(character === 'f'){
+      next('f');
+      next('a');
+      next('l');
+      next('s');
+      next('e');
+      return false;
+    }
+
+    if(character === 'n'){
+      next('n');
+      next('u');
+      next('l');
+      next('l');
+      return null;
+    }
+  };
+
+  // parseValue()
+  // call the right parser depending on what he need to parse [string, number, array, object, special]
+  // return the innerParser result accordingly
+  var parseValue = () => {
+    whitespace();
+    if(character === '"'){
+      return parseString();
+    } else if (character === '-' || character >= '0' && character <= '9'){
+      return parseNumber();
+    } else if (character === '[') {
+      return parseArray();
+    } else if (character === '{') {
+      return parseObject();
+    } else {
+      return parseSpecial();
+    }
+  };
+
+  return parseValue();
 };
