@@ -47,7 +47,7 @@ var parseJSON = function(json) {
 		          	return str;
 		        } else if (character === '\\'){
 		          	next();
-		          	if (typeof exception[character]){
+		          	if (exception[character]){
 		            	str += exception[character];
 		          	} else {
 		            	break;
@@ -128,9 +128,11 @@ var parseJSON = function(json) {
 	        	return obj;
 	      	}
 	       	while (character){
+	       		// keys can only be strings
 	        	var key = parseString();
 	        	whitespace();
 	        	next(':');
+	        	// values can be anything: number string array or obj
 	        	var value = parseValue();
 	        	obj[key] = value;
 	        	whitespace();
